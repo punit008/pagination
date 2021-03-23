@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+
+    <!-- Other Css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <title>Crud Operation!</title>
+  </head>
+  <style>
+    .d-flex {
+        justify-content: space-between;
+    }
+    .d-flex>.p-2 {
+        margin-bottom: 10px;
+        padding: 10px;
+    }
+    button.btn.btn-primary.btn_productForm.p-2 {
+        width: 12rem;
+        padding: 10px !important;
+    }
+    input.form-control.p-2 {
+        width: 15rem !important;
+    }
+    ul {
+        list-style-type: none;
+    /*	background-color: black;*/
+        overflow: hidden;
+        margin: auto;
+        text-align: center;
+    }
+    li {
+        display: inline-block;
+        color: white;
+        padding: 10px 20px;
+        margin: 10px;
+        background-color: green;
+        border-radius: 8px;
+    }
+
+    .disabled {
+        background-color: gray;
+    }
+
+    .current {
+        background-color: blue;
+    }
+  </style>
+  <body>
+
+    <div class="container">
+
+        <h1 class="text-center">Crud Operation</h1>
+        
+        <div class="d-flex">
+          <button type="button" class="btn btn-primary btn_productForm p-2" onclick="addProductForm()">Add New Product</button>
+          <br><br>
+          <input class="form-control p-2" id="search" type="search" placeholder="Search" aria-label="Search" onkeyup="search()">
+        </div>
+
+        <!-- Section to show add product form -->
+            <div id="addForm"></div>
+        <!-- End of section to show add product form -->
+
+        <!-- Section to show table product detail -->
+            <div id="table"></div>
+        <!-- End of section table product detail -->
+
+        <!--  -->
+
+    </div>
+    
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+
+    <!-- My Script -->
+    <script>
+      // Api Variable
+        var url = "http://localhost/api/";
+        
+        // Xmlhttp Request
+        var xmlHttp = new XMLHttpRequest();
+        
+        // Function to show table
+        function showTable(viewProductId = null, url1=''){
+
+            let nameArray = [];
+
+            if (url1=='') {
+				var url1 = "http://localhost/api/product/read_paging.php";
+				var currentPage = 1;
+			} else {
+				url1;
+				currentPage = new URL(url1);
+				currentPage = currentPage.searchParams.get("page");
+			}
+
+			var totalPerPageData = 5;
+        
+            // console.log(viewProductId);
+            let theUrl = url+"product/read.php";
+            xmlHttp.open( "GET", url1, false); // false for synchronous request
+            xmlHttp.send( null );
+            let getAllData = JSON.parse(xmlHttp.response);
+         
+            var table = "";
+            table += "<table class='table table-hover animate__animated animate__pulse sorting' id='table_search'>";
+                    table += "<tr class='table-dark'>";
+                        table += "<th>SrNo.</th>";
+                        table += "<th>Product Name</th>";
+                        table += "<th>Product Category</th>";
+                        table += "<th>Product Description</th>";
+                        table += "<th>Product Price</th>";
+                        table += "<th class='text-center'>Action</th>";
+                    table += "</tr>";
+                
+                    table += "<tr style='display:none'>";
+                    table += "<th colspan='6' class='text-center text-danger'>No Record Found</th>";
+                    table += "</tr>"; 
+                // Loop to show product 
+        
+            if(getAllData.message == "No products found."){
+                table += "<tr>";
+                table += "<td colspan='6' class='text-center text-danger'>No Record Found</td>";
+                table += "</tr>";  
+            }else{
+                if(viewProductId !== null){
+                    let theUrlView = url+"product/read_one.php?id="+viewProductId;
+    
+                    xmlHttp.open( "GET", theUrlView, false); // false for synchronous request
+                    xmlHttp.send( null );
+                    
+                    let getViewData = JSON.parse(xmlHttp.response);
+                    // console.log(getViewData.name);
+                        table += "<tr>";
+                            table += "<td>"+1+"</td>";
+                            table += "<td>"+getViewData.name+"</td>";
+                            table += "<td>"+getViewData.category_name+"</td>";
+                            table += "<td>"+getViewData.description+"</td>";
+                            table += "<td>"+getViewData.price+"</td>";
+                            table += "<td><center><button type='button' class='btn btn-primary' onclick='back()'>Back</button></center></td>";
+                        table += "</tr>";
+                }else{
+                    
+                     for(let i=0; i<getAllData.records.length; i++){
+                        table += "<tr>";
+                            
+                            nameArray.push(getAllData.records[i].name);
+                            
+                            table += "<td>"+(totalPerPageData *(currentPage-1)+i+1)+"</td>";
+                            table += "<td>"+getAllData.records[i].name+"</td>";
+                            table += "<td>"+getAllData.records[i].category_name+"</td>";
+                            table += "<td>"+getAllData.records[i].description+"</td>";
+                            table += "<td>"+getAllData.records[i].price+"</td>";
+                            table += "<td><center><button class='btn btn-success' onclick=viewProduct("+getAllData.records[i].id+")>View</button>&nbsp;&nbsp;<button class='btn btn-danger' onclick='deleteProduct("+getAllData.records[i].id+")'>Delete</button>&nbsp;&nbsp;<button class='btn btn-primary' type='button' onclick ='editProduct("+getAllData.records[i].id+")'>Edit</button></center></td>";
+                        table += "</tr>";
+                    }
+                    console.log(nameArray.sort());
+                }
+            }
+                
+                    
+            table += "</table>";
+            table += "<ul>";
+				if (getAllData.paging.first=='') {
+					table += "<li class='disabled' onclick='showTable(null,`"+getAllData.paging.first+"`);'>First</li>";
+				} else {
+					table += "<li onclick='showTable(null,`"+getAllData.paging.first+"`);'>First</li>";
+				}
+
+
+				for(listD of getAllData.paging.pages) {
+
+					if(listD.current_page=='yes') {
+						table += "<li class ='current' onclick='showTable(null,`"+listD.url+"`);'>"+listD.page+"</li>";
+					} else {
+						table += "<li onclick='showTable(null,`"+listD.url+"`);'>"+listD.page+"</li>";
+					}
+
+					
+				}
+
+				if (getAllData.paging.last=='') {
+					table += "<li class='disabled' onclick='showTable(null,`"+getAllData.paging.last+"`);'>Last</li>";
+				} else {
+					table += "<li onclick='showTable(null,`"+getAllData.paging.last+"`);'>Last</li>";
+				}
+			table += "</ul>";
+            
+            // console.log(table);
+            document.getElementById('table').innerHTML = table;
+        }
+
+         
+        // Execute the show table function
+            showTable();
+        
+        // Function to add product form
+        
+        function addProductForm(editProductId = null){
+            document.getElementsByClassName('btn_productForm')[0].style.display = "none";
+            document.getElementById('search').style.display = "none";
+            document.getElementById('table').style.display = "none";
+            document.getElementById('addForm').style.display = "block";
+            form ="";
+            // form +="<div class='row'>"
+        
+            form += "<form>";
+                if(editProductId !== null){
+        
+                    let theUrl = url+"product/read_one.php?id="+editProductId;
+                    xmlHttp.open( "GET", theUrl, false); // false for synchronous request
+                    xmlHttp.send( null );
+                    let getEditData = JSON.parse(xmlHttp.response);
+                    // console.log(getEditData);
+                    form += "<button type='button' class='btn btn-primary' onclick='back()'>Back</button><br><br>";
+                    form += "<div class='form-group'>\
+                            <label for='product_name'>Product Name:</label>\
+                            <input type='text' class='form-control' placeholder='Enter Product Name' id='proName' value='"+getEditData.name+"'>\
+                        </div><br>";
+                    form += "<div class='form-group'>\
+                            <label for='product_price'>Product Price:</label>\
+                            <input type='number' class='form-control' placeholder='Enter Product Price' id='proPrice' value='"+getEditData.price+"'>\
+                        </div><br>";
+                    form += "<div class='form-group'>\
+                        <label for='product_description'>Product Description:</label>\
+                        <input type='text' class='form-control' placeholder='Enter Product Description' id='proDescription' value='"+getEditData.description+"'>\
+                    </div><br>"; 
+                    form += "<div class='form-group'>\
+                            <label for='product_description'>Product Category:</label>\
+                            <select class='form-select' id='proCategory'>\
+                            <option value=''>Choose...</option>\
+                            "+getCategory(getEditData.category_id)+"</select>\
+                            </div><br>";
+                    form += "<center><input type='submit' class='btn btn-success btn-md' name='Submit' onclick='return postProduct("+getEditData.id+")'></center><br><br>"
+                }else{
+                    form += "<button type='button' class='btn btn-primary' onclick='back()'>Back</button><br><br>";
+                    form +="  <div class='form-group'>\
+                            <label for='product_name'>Product Name:</label>\
+                            <input type='text' class='form-control' placeholder='Enter Product Name' id='proName'>\
+                        </div><br>";
+                    form +="  <div class='form-group'>\
+                            <label for='product_price'>Product Price:</label>\
+                            <input type='number' class='form-control' placeholder='Enter Product Price' id='proPrice'>\
+                        </div><br>";
+                    form +="  <div class='form-group'>\
+                        <label for='product_description'>Product Description:</label>\
+                        <input type='text' class='form-control' placeholder='Enter Product Description' id='proDescription'>\
+                    </div><br>"; 
+                    form += "<div class='form-group'>\
+                            <label for='product_description'>Product Category:</label>\
+                            <select class='form-select' id='proCategory'>\
+                            <option value=''>Choose...</option>\
+                            "+getCategory()+"</select>\
+                            </div><br>";
+                    form += "<center><input type='submit' class='btn btn-success btn-md' name='Submit' onclick='return postProduct()'></center><br><br>";
+                }
+                            
+            form += "</form>";          
+            // form += "</div>";
+            document.getElementById('addForm').innerHTML = form;        
+        }
+        
+        // Function to get category for product
+        function getCategory(getCategoryId = null){
+            let theUrl = url+"category/read.php";
+        
+            xmlHttp.open( "GET", theUrl, false); // false for synchronous request
+            xmlHttp.send( null );  
+        
+            option = "";
+            let result = JSON.parse(xmlHttp.response);
+            // console.log(xmlHttp.response);
+            if(getCategoryId !== null){
+                
+                for(let i=0; i<result.records.length; i++){
+                    // console.log("This Response"+ result.records[i].id);
+                    if(getCategoryId === result.records[i].id){
+                        option +="<Option value="+result.records[i].id+" selected>"+result.records[i].name+"</Option>";   
+                    }else{
+                        option +="<Option value="+result.records[i].id+">"+result.records[i].name+"</Option>";
+                    }   
+                }
+                return option;
+            }else{
+                for(let i=0; i<result.records.length; i++){
+                    option +="<Option value="+result.records[i].id+">"+result.records[i].name+"</Option>";
+                }
+                // console.log(result.records[0]);
+                return option;
+            }
+        
+        }
+        
+        // Function to add product data and update product data
+        function postProduct(updateProductId = null){
+            let productName = document.getElementById('proName').value;
+            let productPrice = document.getElementById('proPrice').value;
+            let productDescription = document.getElementById('proDescription').value;
+            let productCategory = document.getElementById('proCategory').value;
+            let today = new Date();
+            let dd = String(today.getDate()).padStart(2, '0');
+            let mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+            let yyyy = today.getFullYear();
+        
+            let todayDate = mm + '/' + dd + '/' + yyyy;
+        
+            // console.log(productName);
+            // console.log(productPrice);
+            // console.log(productDescription);
+            // console.log(productCategory);
+            // console.log(todayDate);
+        
+            if(updateProductId == null){
+                let theUrl = url+"product/create.php";
+        
+                if(productName != "" && productPrice != "" && productDescription !="" && productCategory != "" ){
+                    // console.log("productPrice"+productPrice);
+                    // return false;
+                    xmlHttp.open("POST", theUrl, false);
+                    xmlHttp.setRequestHeader('Content-Type', 'application/json');
+                    xmlHttp.send(JSON.stringify({
+                        "name" : productName,
+                        "price" : productPrice,
+                        "description" : productDescription,
+                        "category_id" : productCategory,
+                        "created" : todayDate
+                    }));
+                    let msg = JSON.parse(xhr.response);
+                    // console.log(msg);
+                    if(msg.message == "Product was created."){
+                        showTable(); 
+                        document.getElementById('addForm').style.display = "none";
+                        document.getElementById('table').style.display = "block";
+                        document.getElementById('search').style.display = "block";
+                        document.getElementsByClassName('btn_productForm')[0].style.display = "block";
+                    }
+                }
+            }else{
+                let updateUrl = url+"product/update.php";
+                xmlHttp.open("POST", updateUrl, false);
+                xmlHttp.setRequestHeader('Content-Type', 'application/json');
+                xmlHttp.send(JSON.stringify({
+                    "id" : updateProductId,
+                    "name" : productName,
+                    "price" : productPrice,
+                    "description" : productDescription,
+                    "category_id" : productCategory,
+                    "created" : todayDate
+                }));
+                let msg = JSON.parse(xhr.response);
+                // console.log(msg);
+                if(msg.message == "Product was updated."){
+                    showTable();
+                    document.getElementById('addForm').style.display = "none";
+                    document.getElementById('table').style.display = "block";
+                    document.getElementById('search').style.display = "block";
+                    document.getElementsByClassName('btn_productForm')[0].style.display = "block";
+                }
+            }
+        
+        
+        
+        
+            return false;
+        }
+        
+        // Function to delete product
+        function deleteProduct(id){
+            let theUrl = url+"product/delete.php";
+            xmlHttp.open("POST", theUrl, false);
+            xmlHttp.setRequestHeader('Content-Type', 'application/json');
+            xmlHttp.send(JSON.stringify({
+                "id" : id,
+            }));
+            let msg = JSON.parse(xmlHttp.response);
+            // console.log(msg.message);
+            if(msg.message == "Product was deleted."){
+                showTable();
+            }
+        }
+        
+        // Function to view product
+        function viewProduct(viewProductId){
+            showTable(viewProductId);
+        }
+        
+        //Function to view edit product
+        function editProduct(editProductId){
+            addProductForm(editProductId);
+        } 
+        
+        function search(){
+            var found, table1;
+            var countNone = 0;
+            var inputSearch = document.getElementById('search');
+            filter = inputSearch.value.toUpperCase();
+            let table = document.getElementById('table_search');
+            let tr = table.getElementsByTagName("tr");
+            // console.log(tr);
+            for(let i=0; i<tr.length; i++){
+                var td = tr[i].getElementsByTagName("td");
+                for (j = 0; j < td.length; j++) {
+                    if (td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                    }
+                }
+                
+                if (found) {
+                    tr[i].style.display = "";
+                    tr[0].style.display = "contents";
+                    found = false;
+                    
+                } else {
+                    tr[i].style.display = "none";
+                    tr[0].style.display = "contents";
+                    console.log(tr[1]);
+                    if(tr[i].style.display = "none"){
+                        countNone = countNone+1;
+                    }
+                    var tr_list = (tr.length)-1;
+                    var lastCount = (countNone-1);
+                    if(tr_list == lastCount){
+                        tr[1].style.display = "";
+                    }else{
+                        tr[1].style.display = "none";
+                    }
+                }
+            }
+            
+        }
+        
+        // Function for back button
+        function back(){
+            document.getElementsByClassName('btn_productForm')[0].style.display = "block";
+            document.getElementById('search').style.display = "block";
+            document.getElementById('table').style.display = "block";
+            document.getElementById('addForm').style.display = "none";
+            showTable();
+        }
+    </script>
+  </body>
+</html>
